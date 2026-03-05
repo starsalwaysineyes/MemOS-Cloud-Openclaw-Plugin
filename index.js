@@ -79,7 +79,23 @@ function buildSearchPayload(cfg, prompt, ctx) {
     if (conversationId) payload.conversation_id = conversationId;
   }
 
-  if (cfg.filter) payload.filter = cfg.filter;
+  let filterObj = cfg.filter ? JSON.parse(JSON.stringify(cfg.filter)) : null;
+  const agentId = ctx?.agentId || cfg.agentId;
+
+  if (agentId) {
+    if (filterObj) {
+      if (Array.isArray(filterObj.and)) {
+        filterObj.and.push({ agent_id: agentId });
+      } else {
+        filterObj = { and: [filterObj, { agent_id: agentId }] };
+      }
+    } else {
+      filterObj = { agent_id: agentId };
+    }
+  }
+
+  if (filterObj) payload.filter = filterObj;
+
   if (cfg.knowledgebaseIds?.length) payload.knowledgebase_ids = cfg.knowledgebaseIds;
 
   payload.memory_limit_number = cfg.memoryLimitNumber;
@@ -100,7 +116,8 @@ function buildAddMessagePayload(cfg, messages, ctx) {
     source: MEMOS_SOURCE,
   };
 
-  if (cfg.agentId) payload.agent_id = cfg.agentId;
+  const agentId = ctx?.agentId || cfg.agentId;
+  if (agentId) payload.agent_id = agentId;
   if (cfg.appId) payload.app_id = cfg.appId;
   if (cfg.tags?.length) payload.tags = cfg.tags;
 
