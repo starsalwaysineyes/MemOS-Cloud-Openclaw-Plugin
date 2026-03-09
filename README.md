@@ -93,6 +93,7 @@ MEMOS_API_KEY=YOUR_TOKEN
 - `MEMOS_USER_ID` (optional; default: `openclaw-user`)
 - `MEMOS_CONVERSATION_ID` (optional override)
 - `MEMOS_RECALL_GLOBAL` (default: `true`; when true, search does **not** pass conversation_id)
+- `MEMOS_MULTI_AGENT_MODE` (default: `false`; enable multi-agent data isolation)
 - `MEMOS_CONVERSATION_PREFIX` / `MEMOS_CONVERSATION_SUFFIX` (optional)
 - `MEMOS_CONVERSATION_SUFFIX_MODE` (`none` | `counter`, default: `none`)
 - `MEMOS_CONVERSATION_RESET_ON_NEW` (default: `true`, requires hooks.internal.enabled)
@@ -123,6 +124,8 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
   "toolMemoryLimitNumber": 6,
   "relativity": 0.45,
   "tags": ["openclaw"],
+  "agentId": "",
+  "multiAgentMode": false,
   "asyncMode": true
 }
 ```
@@ -136,6 +139,13 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
 - **Add** (`agent_end`)
   - Builds a `/add/message` request with the **last turn** by default (user + assistant).
   - Sends `messages` with `user_id`, `conversation_id`, and optional `tags/info/agent_id/app_id`.
+
+## Multi-Agent Support
+The plugin provides native support for multi-agent architectures (via the `agent_id` parameter):
+- **Enable Mode**: Set `"multiAgentMode": true` in config or `MEMOS_MULTI_AGENT_MODE=true` in env variables (default is `false`).
+- **Dynamic Context**: When enabled, it automatically captures `ctx.agentId` during OpenClaw lifecycle hooks. (Note: the default OpenClaw agent `"main"` is ignored to preserve backwards compatibility for single-agent users).
+- **Data Isolation**: The `agent_id` is automatically injected into both `/search/memory` and `/add/message` requests. This ensures completely isolated memory and message histories for different agents, even under the same user or session.
+- **Static Override**: You can also force a specific agent ID by setting `"agentId": "your_agent_id"` in the plugin's `config`.
 
 ## Notes
 - `conversation_id` defaults to OpenClaw `sessionKey` (unless `conversationId` is provided). **TODO**: consider binding to OpenClaw `sessionId` directly.

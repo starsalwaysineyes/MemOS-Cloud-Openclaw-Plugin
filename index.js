@@ -50,10 +50,17 @@ function bumpConversationCounter(sessionKey) {
   conversationCounters.set(sessionKey, current + 1);
 }
 
+function getEffectiveAgentId(cfg, ctx) {
+  if (!cfg.multiAgentMode) return undefined;
+  const agentId = ctx?.agentId || cfg.agentId;
+  return agentId === "main" ? undefined : agentId;
+}
+
 function resolveConversationId(cfg, ctx) {
   if (cfg.conversationId) return cfg.conversationId;
   // TODO: consider binding conversation_id directly to OpenClaw sessionId (prefer ctx.sessionId).
-  const base = ctx?.sessionKey || ctx?.sessionId || (ctx?.agentId ? `openclaw:${ctx.agentId}` : "");
+  const agentId = getEffectiveAgentId(cfg, ctx);
+  const base = ctx?.sessionKey || ctx?.sessionId || (agentId ? `openclaw:${agentId}` : "");
   const dynamicSuffix = cfg.conversationSuffixMode === "counter" ? getCounterSuffix(ctx?.sessionKey) : "";
   const prefix = cfg.conversationIdPrefix || "";
   const suffix = cfg.conversationIdSuffix || "";
@@ -80,7 +87,7 @@ function buildSearchPayload(cfg, prompt, ctx) {
   }
 
   let filterObj = cfg.filter ? JSON.parse(JSON.stringify(cfg.filter)) : null;
-  const agentId = ctx?.agentId || cfg.agentId;
+  const agentId = getEffectiveAgentId(cfg, ctx);
 
   if (agentId) {
     if (filterObj) {
@@ -116,7 +123,7 @@ function buildAddMessagePayload(cfg, messages, ctx) {
     source: MEMOS_SOURCE,
   };
 
-  const agentId = ctx?.agentId || cfg.agentId;
+  const agentId = getEffectiveAgentId(cfg, ctx);
   if (agentId) payload.agent_id = agentId;
   if (cfg.appId) payload.app_id = cfg.appId;
   if (cfg.tags?.length) payload.tags = cfg.tags;

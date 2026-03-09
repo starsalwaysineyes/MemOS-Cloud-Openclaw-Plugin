@@ -125,6 +125,10 @@
       "agentId": {
         "type": "string"
       },
+      "multiAgentMode": {
+        "type": "boolean",
+        "default": false
+      },
       "appId": {
         "type": "string"
       },
