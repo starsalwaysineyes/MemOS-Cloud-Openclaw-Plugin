@@ -95,6 +95,7 @@ MEMOS_API_KEY=YOUR_TOKEN
 - `MEMOS_USER_ID`（可选，默认 `openclaw-user`）
 - `MEMOS_CONVERSATION_ID`（可选覆盖）
 - `MEMOS_RECALL_GLOBAL`（默认 `true`；为 true 时检索不传 conversation_id）
+- `MEMOS_MULTI_AGENT_MODE`（默认 `false`；是否开启多 Agent 数据隔离模式）
 - `MEMOS_CONVERSATION_PREFIX` / `MEMOS_CONVERSATION_SUFFIX`（可选）
 - `MEMOS_CONVERSATION_SUFFIX_MODE`（`none` | `counter`，默认 `none`）
 - `MEMOS_CONVERSATION_RESET_ON_NEW`（默认 `true`，需 hooks.internal.enabled）
@@ -124,6 +125,8 @@ MEMOS_API_KEY=YOUR_TOKEN
   "includeToolMemory": false,
   "toolMemoryLimitNumber": 6,
   "tags": ["openclaw"],
+  "agentId": "",
+  "multiAgentMode": false,
   "asyncMode": true
 }
 ```
@@ -142,6 +145,13 @@ MEMOS_API_KEY=YOUR_TOKEN
   - `user_id`、`conversation_id`
   - `messages` 列表
   - 可选 `tags / info / agent_id / app_id`
+
+## 多Agent支持（Multi-Agent）
+插件内置对多Agent模式的支持（`agent_id` 参数）：
+- **开启模式**：需要在配置中设置 `"multiAgentMode": true` 或在环境变量中设置 `MEMOS_MULTI_AGENT_MODE=true`（默认为 `false`）。
+- **动态获取**：开启后，执行生命周期钩子时会自动读取上下文中的 `ctx.agentId`。（注：OpenClaw 的默认 Agent `"main"` 会被自动忽略，以保证老用户的单 Agent 数据兼容性）。
+- **数据隔离**：在调用 `/search/memory`（检索记忆）和 `/add/message`（添加记录）时会自动附带该 `agent_id`，从而保证即使是同一用户下的不同 Agent 之间，记忆和反馈数据也是完全隔离的。
+- **静态配置**：如果需要，也可在上述插件的 `config` 中显式指定 `"agentId": "your_agent_id"` 作为固定值。
 
 ## 说明
 - 未显式指定 `conversation_id` 时，默认使用 OpenClaw `sessionKey`。**TODO**：后续考虑直接绑定 OpenClaw `sessionId`。
