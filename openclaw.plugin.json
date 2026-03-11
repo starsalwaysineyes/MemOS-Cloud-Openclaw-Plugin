@@ -2,7 +2,7 @@
   "id": "memos-cloud-openclaw-plugin",
   "name": "MemOS Cloud OpenClaw Plugin",
   "description": "MemOS Cloud recall + add memory via lifecycle hooks",
-  "version": "0.1.8-beta.5",
+  "version": "0.1.8-beta.6",
   "kind": "lifecycle",
   "main": "./index.js",
   "configSchema": {
