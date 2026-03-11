@@ -111,6 +111,7 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
   "recallGlobal": true,
   "addEnabled": true,
   "captureStrategy": "last_turn",
+  "maxItemChars": 8000,
   "includeAssistant": true,
   "conversationIdPrefix": "",
   "conversationIdSuffix": "",

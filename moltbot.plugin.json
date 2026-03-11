@@ -81,7 +81,7 @@
       "maxItemChars": {
         "type": "integer",
         "description": "Max chars per memory item when injecting prompt",
-        "default": 1500
+        "default": 8000
       },
       "includeAssistant": {
         "type": "boolean",
