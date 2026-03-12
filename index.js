@@ -251,7 +251,7 @@ export default {
         if (!promptBlock) return;
 
         return {
-          prependContext: promptBlock,
+          prependSystemContext: promptBlock,
         };
       } catch (err) {
         log.warn?.(`[memos-cloud] recall failed: ${String(err)}`);

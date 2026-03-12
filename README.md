@@ -135,7 +135,7 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
 - **Recall** (`before_agent_start`)
   - Builds a `/search/memory` request using `user_id`, `query` (= prompt + optional prefix), and optional filters.
   - Default **global recall**: when `recallGlobal=true`, it does **not** pass `conversation_id`.
-  - Formats a MemOS prompt (Role/System/Memory/Skill/Protocols) from `/search/memory` results, then injects via `prependContext`.
+  - Formats a MemOS prompt (Role/System/Memory/Skill/Protocols) from `/search/memory` results, then injects via `prependSystemContext`.
 
 - **Add** (`agent_end`)
   - Builds a `/add/message` request with the **last turn** by default (user + assistant).
