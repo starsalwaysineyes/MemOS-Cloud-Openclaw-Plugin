@@ -99,6 +99,15 @@ MEMOS_API_KEY=YOUR_TOKEN
 - `MEMOS_CONVERSATION_PREFIX` / `MEMOS_CONVERSATION_SUFFIX`（可选）
 - `MEMOS_CONVERSATION_SUFFIX_MODE`（`none` | `counter`，默认 `none`）
 - `MEMOS_CONVERSATION_RESET_ON_NEW`（默认 `true`，需 hooks.internal.enabled）
+- `MEMOS_RECALL_FILTER_ENABLED`（默认 `false`；开启后先用你指定的模型过滤召回记忆再注入）
+- `MEMOS_RECALL_FILTER_BASE_URL`（OpenAI 兼容接口，例如 `http://127.0.0.1:11434/v1`）
+- `MEMOS_RECALL_FILTER_API_KEY`（可选，若你的接口需要鉴权）
+- `MEMOS_RECALL_FILTER_MODEL`（用于筛选记忆的模型名）
+- `MEMOS_RECALL_FILTER_TIMEOUT_MS`（默认 `6000`）
+- `MEMOS_RECALL_FILTER_RETRIES`（默认 `0`）
+- `MEMOS_RECALL_FILTER_CANDIDATE_LIMIT`（默认每类 `30` 条）
+- `MEMOS_RECALL_FILTER_MAX_ITEM_CHARS`（默认 `500`）
+- `MEMOS_RECALL_FILTER_FAIL_OPEN`（默认 `true`；筛选失败时回退为“不过滤”）
 
 ## 可选插件配置
 在 `plugins.entries.memos-cloud-openclaw-plugin.config` 中设置：
@@ -127,7 +136,16 @@ MEMOS_API_KEY=YOUR_TOKEN
   "tags": ["openclaw"],
   "agentId": "",
   "multiAgentMode": false,
-  "asyncMode": true
+  "asyncMode": true,
+  "recallFilterEnabled": false,
+  "recallFilterBaseUrl": "http://127.0.0.1:11434/v1",
+  "recallFilterApiKey": "",
+  "recallFilterModel": "qwen2.5:7b",
+  "recallFilterTimeoutMs": 6000,
+  "recallFilterRetries": 0,
+  "recallFilterCandidateLimit": 30,
+  "recallFilterMaxItemChars": 500,
+  "recallFilterFailOpen": true
 }
 ```
 
@@ -137,7 +155,8 @@ MEMOS_API_KEY=YOUR_TOKEN
   - `user_id`、`query`（= prompt + 可选前缀）
   - 默认**全局召回**：`recallGlobal=true` 时不传 `conversation_id`
   - 可选 `filter` / `knowledgebase_ids`
-- 使用 `/search/memory` 结果按 MemOS 提示词模板（Role/System/Memory/Skill/Protocols）拼装，并通过 `prependContext` 注入
+- （可选）若开启 `recallFilterEnabled`，会先把 `memory/preference/tool_memory` 候选发给你配置的模型做二次筛选，只保留 `keep` 的条目
+- 再按 MemOS 提示词模板（Role/System/Memory/Skill/Protocols）拼装，并通过 `prependContext` 注入
 
 ### 2) 添加（agent_end）
 - 默认只写**最后一轮**（user + assistant）

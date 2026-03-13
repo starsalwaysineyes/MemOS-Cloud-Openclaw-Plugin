@@ -2,8 +2,9 @@
 import {
   addMessage,
   buildConfig,
+  extractResultData,
   extractText,
-  formatPromptBlock,
+  formatPromptBlockFromData,
   USER_QUERY_MARKER,
   searchMemory,
 } from "./lib/memos-cloud-api.js";
@@ -196,6 +197,197 @@ function truncate(text, maxLen) {
   return text.length > maxLen ? `${text.slice(0, maxLen)}...` : text;
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function parseModelJson(text) {
+  if (!text || typeof text !== "string") return null;
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    // Some models wrap JSON in markdown code fences.
+  }
+  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+  if (fenceMatch?.[1]) {
+    try {
+      return JSON.parse(fenceMatch[1].trim());
+    } catch {
+      return null;
+    }
+  }
+  const first = trimmed.indexOf("{");
+  const last = trimmed.lastIndexOf("}");
+  if (first >= 0 && last > first) {
+    try {
+      return JSON.parse(trimmed.slice(first, last + 1));
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+function normalizeIndexList(value, maxLen) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const v of value) {
+    if (!Number.isInteger(v)) continue;
+    if (v < 0 || v >= maxLen) continue;
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v);
+  }
+  return out;
+}
+
+function buildRecallCandidates(data, cfg) {
+  const limit = Number.isFinite(cfg.recallFilterCandidateLimit) ? Math.max(0, cfg.recallFilterCandidateLimit) : 30;
+  const maxChars = Number.isFinite(cfg.recallFilterMaxItemChars) ? Math.max(80, cfg.recallFilterMaxItemChars) : 500;
+  const memoryList = Array.isArray(data?.memory_detail_list) ? data.memory_detail_list : [];
+  const preferenceList = Array.isArray(data?.preference_detail_list) ? data.preference_detail_list : [];
+  const toolList = Array.isArray(data?.tool_memory_detail_list) ? data.tool_memory_detail_list : [];
+
+  const memoryCandidates = memoryList.slice(0, limit).map((item, idx) => ({
+    idx,
+    text: truncate(item?.memory_value || item?.memory_key || "", maxChars),
+    relativity: item?.relativity,
+  }));
+  const preferenceCandidates = preferenceList.slice(0, limit).map((item, idx) => ({
+    idx,
+    text: truncate(item?.preference || "", maxChars),
+    relativity: item?.relativity,
+    preference_type: item?.preference_type || "",
+  }));
+  const toolCandidates = toolList.slice(0, limit).map((item, idx) => ({
+    idx,
+    text: truncate(item?.tool_value || "", maxChars),
+    relativity: item?.relativity,
+  }));
+
+  return {
+    memoryList,
+    preferenceList,
+    toolList,
+    candidatePayload: {
+      memory: memoryCandidates,
+      preference: preferenceCandidates,
+      tool_memory: toolCandidates,
+    },
+  };
+}
+
+function applyRecallDecision(data, decision, lists) {
+  const keep = decision?.keep || {};
+  const memoryIdx = normalizeIndexList(keep.memory, lists.memoryList.length);
+  const preferenceIdx = normalizeIndexList(keep.preference, lists.preferenceList.length);
+  const toolIdx = normalizeIndexList(keep.tool_memory, lists.toolList.length);
+
+  return {
+    ...data,
+    memory_detail_list: memoryIdx.map((idx) => lists.memoryList[idx]),
+    preference_detail_list: preferenceIdx.map((idx) => lists.preferenceList[idx]),
+    tool_memory_detail_list: toolIdx.map((idx) => lists.toolList[idx]),
+  };
+}
+
+async function callRecallFilterModel(cfg, userPrompt, candidatePayload) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  if (cfg.recallFilterApiKey) {
+    headers.Authorization = `Bearer ${cfg.recallFilterApiKey}`;
+  }
+
+  const modelInput = {
+    user_query: userPrompt,
+    candidate_memories: candidatePayload,
+    output_schema: {
+      keep: {
+        memory: ["number index"],
+        preference: ["number index"],
+        tool_memory: ["number index"],
+      },
+      reason: "optional short string",
+    },
+  };
+
+  const body = {
+    model: cfg.recallFilterModel,
+    temperature: 0,
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a strict memory relevance judge. Return JSON only. Keep only items directly useful for answering current user query. If unsure, do not keep.",
+      },
+      {
+        role: "user",
+        content: JSON.stringify(modelInput),
+      },
+    ],
+  };
+
+  let lastError;
+  const retries = Number.isFinite(cfg.recallFilterRetries) ? Math.max(0, cfg.recallFilterRetries) : 0;
+  const timeoutMs = Number.isFinite(cfg.recallFilterTimeoutMs) ? Math.max(1000, cfg.recallFilterTimeoutMs) : 6000;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      const res = await fetch(`${cfg.recallFilterBaseUrl}/chat/completions`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const json = await res.json();
+      const text = json?.choices?.[0]?.message?.content || "";
+      const parsed = parseModelJson(text);
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("invalid JSON output from recall filter model");
+      }
+      return parsed;
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await sleep(120 * (attempt + 1));
+      }
+    }
+  }
+  throw lastError;
+}
+
+async function maybeFilterRecallData(cfg, data, userPrompt, log) {
+  if (!cfg.recallFilterEnabled) return data;
+  if (!cfg.recallFilterBaseUrl || !cfg.recallFilterModel) {
+    log.warn?.("[memos-cloud] recall filter enabled but missing recallFilterBaseUrl/recallFilterModel; skip filter");
+    return data;
+  }
+  const lists = buildRecallCandidates(data, cfg);
+  const hasCandidates =
+    lists.candidatePayload.memory.length > 0 ||
+    lists.candidatePayload.preference.length > 0 ||
+    lists.candidatePayload.tool_memory.length > 0;
+  if (!hasCandidates) return data;
+
+  try {
+    const decision = await callRecallFilterModel(cfg, userPrompt, lists.candidatePayload);
+    return applyRecallDecision(data, decision, lists);
+  } catch (err) {
+    log.warn?.(`[memos-cloud] recall filter failed: ${String(err)}`);
+    return cfg.recallFilterFailOpen ? data : { ...data, memory_detail_list: [], preference_detail_list: [], tool_memory_detail_list: [] };
+  }
+}
+
 export default {
   id: "memos-cloud-openclaw-plugin",
   name: "MemOS Cloud OpenClaw Plugin",
@@ -243,10 +435,13 @@ export default {
       try {
         const payload = buildSearchPayload(cfg, event.prompt, ctx);
         const result = await searchMemory(cfg, payload);
-        const promptBlock = formatPromptBlock(result, { 
+        const resultData = extractResultData(result);
+        if (!resultData) return;
+        const filteredData = await maybeFilterRecallData(cfg, resultData, event.prompt, log);
+        const promptBlock = formatPromptBlockFromData(filteredData, {
           wrapTagBlocks: true,
           relativity: payload.relativity,
-          maxItemChars: cfg.maxItemChars
+          maxItemChars: cfg.maxItemChars,
         });
         if (!promptBlock) return;
 
