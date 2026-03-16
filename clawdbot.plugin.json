@@ -57,6 +57,11 @@
         "type": "boolean",
         "default": true
       },
+      "disableAutoSearchMemory": {
+        "type": "boolean",
+        "description": "Disable the automatic /search/memory call on before_agent_start",
+        "default": false
+      },
       "recallGlobal": {
         "type": "boolean",
         "default": true
@@ -64,6 +69,11 @@
       "addEnabled": {
         "type": "boolean",
         "default": true
+      },
+      "disableAutoAddMessage": {
+        "type": "boolean",
+        "description": "Disable the automatic /add/message call on agent_end",
+        "default": false
       },
       "captureStrategy": {
         "type": "string",
