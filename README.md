@@ -44,7 +44,7 @@ Make sure it’s enabled in `~/.openclaw/openclaw.json`:
     },
     "load": {
       "paths": [
-        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin\\package"
+        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin"
       ]
     }
   }

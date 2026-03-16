@@ -46,7 +46,7 @@ openclaw gateway restart
     },
     "load": {
       "paths": [
-        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin\\package"
+        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin"
       ]
     }
   }
