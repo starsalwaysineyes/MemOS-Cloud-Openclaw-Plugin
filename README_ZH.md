@@ -46,7 +46,7 @@ openclaw gateway restart
     },
     "load": {
       "paths": [
-        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin\\package"
+        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin"
       ]
     }
   }
@@ -119,8 +119,10 @@ MEMOS_API_KEY=YOUR_TOKEN
   "conversationId": "openclaw-main",
   "queryPrefix": "important user context preferences decisions ",
   "recallEnabled": true,
+  "disableAutoSearchMemory": false,
   "recallGlobal": true,
   "addEnabled": true,
+  "disableAutoAddMessage": false,
   "captureStrategy": "last_turn",
   "includeAssistant": true,
   "conversationIdPrefix": "",
@@ -153,6 +155,7 @@ MEMOS_API_KEY=YOUR_TOKEN
 ### 1) 召回（before_agent_start）
 - 组装 `/search/memory` 请求
   - `user_id`、`query`（= prompt + 可选前缀）
+  - 若设置 `disableAutoSearchMemory=true`，会跳过自动 `/search/memory`
   - 默认**全局召回**：`recallGlobal=true` 时不传 `conversation_id`
   - 可选 `filter` / `knowledgebase_ids`
 - （可选）若开启 `recallFilterEnabled`，会先把 `memory/preference/tool_memory` 候选发给你配置的模型做二次筛选，只保留 `keep` 的条目
@@ -160,6 +163,7 @@ MEMOS_API_KEY=YOUR_TOKEN
 
 ### 2) 添加（agent_end）
 - 默认只写**最后一轮**（user + assistant）
+- 若设置 `disableAutoAddMessage=true`，会跳过自动 `/add/message`，但不影响 recall。
 - 构造 `/add/message` 请求：
   - `user_id`、`conversation_id`
   - `messages` 列表

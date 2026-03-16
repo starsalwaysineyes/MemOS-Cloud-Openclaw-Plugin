@@ -419,7 +419,7 @@ export default {
     }
 
     api.on("before_agent_start", async (event, ctx) => {
-      if (!cfg.recallEnabled) return;
+      if (!cfg.recallEnabled || cfg.disableAutoSearchMemory) return;
       const userPrompt = stripOpenClawInjectedPrefix(event?.prompt || "");
       if (!userPrompt || userPrompt.length < 3) return;
       if (!cfg.apiKey) {
@@ -447,7 +447,7 @@ export default {
     });
 
     api.on("agent_end", async (event, ctx) => {
-      if (!cfg.addEnabled) return;
+      if (!cfg.addEnabled || cfg.disableAutoAddMessage) return;
       if (!event?.success || !event?.messages?.length) return;
       if (!cfg.apiKey) {
         warnMissingApiKey(log, "add");

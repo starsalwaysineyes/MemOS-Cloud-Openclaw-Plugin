@@ -44,7 +44,7 @@ Make sure it’s enabled in `~/.openclaw/openclaw.json`:
     },
     "load": {
       "paths": [
-        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin\\package"
+        "C:\\Users\\YourName\\.openclaw\\extensions\\memos-cloud-openclaw-plugin"
       ]
     }
   }
@@ -117,8 +117,10 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
   "conversationId": "openclaw-main",
   "queryPrefix": "important user context preferences decisions ",
   "recallEnabled": true,
+  "disableAutoSearchMemory": false,
   "recallGlobal": true,
   "addEnabled": true,
+  "disableAutoAddMessage": false,
   "captureStrategy": "last_turn",
   "maxItemChars": 8000,
   "includeAssistant": true,
@@ -152,12 +154,14 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
 ## How it Works
 - **Recall** (`before_agent_start`)
   - Builds a `/search/memory` request using `user_id`, `query` (= prompt + optional prefix), and optional filters.
+  - Set `disableAutoSearchMemory=true` to skip the automatic `/search/memory` call.
   - Default **global recall**: when `recallGlobal=true`, it does **not** pass `conversation_id`.
   - Optional second-pass filtering: if `recallFilterEnabled=true`, candidates are sent to your configured model and only returned `keep` items are injected.
   - Injects a stable MemOS recall protocol via `appendSystemContext`, while the retrieved `<memories>` block remains in `prependContext`.
 
 - **Add** (`agent_end`)
   - Builds a `/add/message` request with the **last turn** by default (user + assistant).
+  - Set `disableAutoAddMessage=true` to skip the automatic `/add/message` call while keeping recall enabled.
   - Sends `messages` with `user_id`, `conversation_id`, and optional `tags/info/agent_id/app_id`.
 
 ## Multi-Agent Support
