@@ -116,3 +116,37 @@ test("supports windows newlines", () => {
 
   assert.equal(stripOpenClawInjectedPrefix(input), "继续");
 });
+
+test("strips gateway-client sender block and leading weekday timestamp envelope", () => {
+  const input = [
+    "Sender (untrusted metadata):",
+    "```json",
+    '{"label":"openclaw-tui (gateway-client)","id":"gateway-client"}',
+    "```",
+    "",
+    "[Mon 2026-03-16 14:27 GMT+8] What is Melanie's hand-painted bowl a reminder of?",
+  ].join("\n");
+
+  assert.equal(
+    stripOpenClawInjectedPrefix(input),
+    "What is Melanie's hand-painted bowl a reminder of?",
+  );
+});
+
+test("strips leading pm-on-date envelope after inbound metadata", () => {
+  const input = [
+    "Sender (untrusted metadata):",
+    "```json",
+    '{"label":"openclaw-tui (gateway-client)","id":"gateway-client"}',
+    "```",
+    "",
+    "[06:18 PM on 07 March, 2026]: 继续",
+  ].join("\n");
+
+  assert.equal(stripOpenClawInjectedPrefix(input), "继续");
+});
+
+test("keeps bracketed content when it is not a recognized timestamp envelope", () => {
+  const input = "[Important] What is Melanie's hand-painted bowl a reminder of?";
+  assert.equal(stripOpenClawInjectedPrefix(input), input);
+});
