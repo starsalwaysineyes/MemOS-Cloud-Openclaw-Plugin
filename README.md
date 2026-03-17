@@ -106,6 +106,11 @@ MEMOS_API_KEY=YOUR_TOKEN
 - `MEMOS_RECALL_FILTER_CANDIDATE_LIMIT` (default: `30` per category)
 - `MEMOS_RECALL_FILTER_MAX_ITEM_CHARS` (default: `500`)
 - `MEMOS_RECALL_FILTER_FAIL_OPEN` (default: `true`; fallback to unfiltered recall on failure)
+- `MEMOS_CAPTURE_STRATEGY` (default: `last_turn`)
+- `MEMOS_ASYNC_MODE` (default: `true`; non-blocking memory addition)
+- `MEMOS_THROTTLE_MS` (default: `0`; throttle memory requests)
+- `MEMOS_INCLUDE_ASSISTANT` (default: `true`; include assistant messages in memory)
+- `MEMOS_MAX_MESSAGE_CHARS` (default: `20000`; max characters for message history)
 
 ## Optional Plugin Config
 In `plugins.entries.memos-cloud-openclaw-plugin.config`:
@@ -145,7 +150,9 @@ In `plugins.entries.memos-cloud-openclaw-plugin.config`:
   "recallFilterRetries": 0,
   "recallFilterCandidateLimit": 30,
   "recallFilterMaxItemChars": 500,
-  "recallFilterFailOpen": true
+  "recallFilterFailOpen": true,
+  "throttleMs": 0,
+  "maxMessageChars": 20000
 }
 ```
 

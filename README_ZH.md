@@ -108,6 +108,11 @@ MEMOS_API_KEY=YOUR_TOKEN
 - `MEMOS_RECALL_FILTER_CANDIDATE_LIMIT`（默认每类 `30` 条）
 - `MEMOS_RECALL_FILTER_MAX_ITEM_CHARS`（默认 `500`）
 - `MEMOS_RECALL_FILTER_FAIL_OPEN`（默认 `true`；筛选失败时回退为“不过滤”）
+- `MEMOS_CAPTURE_STRATEGY`（默认 `last_turn`；记忆捕获策略）
+- `MEMOS_ASYNC_MODE`（默认 `true`；异步模式添加记忆）
+- `MEMOS_THROTTLE_MS`（默认 `0`；请求节流时间，单位毫秒）
+- `MEMOS_INCLUDE_ASSISTANT`（默认 `true`；记忆是否包含助手回复）
+- `MEMOS_MAX_MESSAGE_CHARS`（默认 `20000`；单条记忆最大字符数限制）
 
 ## 可选插件配置
 在 `plugins.entries.memos-cloud-openclaw-plugin.config` 中设置：
@@ -145,7 +150,9 @@ MEMOS_API_KEY=YOUR_TOKEN
   "recallFilterRetries": 0,
   "recallFilterCandidateLimit": 30,
   "recallFilterMaxItemChars": 500,
-  "recallFilterFailOpen": true
+  "recallFilterFailOpen": true,
+  "throttleMs": 0,
+  "maxMessageChars": 20000
 }
 ```
 

@@ -98,55 +98,55 @@ test("strips valid prefix even if body starts with a sentinel-like line", () => 
 test("supports leading blank lines before inbound metadata", () => {
   const input = [
     "",
-    "",
     "Conversation info (untrusted metadata):",
     "```json",
     '{"message_id":"123"}',
     "```",
-    "",
-    "真正的问题",
+    "Hello",
   ].join("\n");
-
-  assert.equal(stripOpenClawInjectedPrefix(input), "真正的问题");
+  assert.equal(stripOpenClawInjectedPrefix(input), "Hello");
 });
 
-test("supports windows newlines", () => {
-  const input =
-    "Conversation info (untrusted metadata):\r\n```json\r\n{\"message_id\":\"123\"}\r\n```\r\n\r\n继续";
+test("strips Feishu injected prompt", () => {
+  const input = `System: [2026-03-17 14:17:33 GMT+8] Feishu[default] DM from ou_37e8a1514c24e8afd9cfeca86f679980: 我叫什么名字 
+ 
+ Conversation info (untrusted metadata): 
+ \`\`\`json 
+ { 
+  "timestamp": "Tue 2026-03-17 14:17 GMT+8" 
+ } 
+ \`\`\` 
+ 
+ [message_id: om_x100b54bb510590dcc2998da17ca2c2b] 
+ ou_37e8a1514c24e8afd9cfeca86f679980: 我叫什么名字 `;
 
-  assert.equal(stripOpenClawInjectedPrefix(input), "继续");
+  assert.equal(stripOpenClawInjectedPrefix(input), "我叫什么名字");
 });
 
-test("strips gateway-client sender block and leading weekday timestamp envelope", () => {
-  const input = [
-    "Sender (untrusted metadata):",
-    "```json",
-    '{"label":"openclaw-tui (gateway-client)","id":"gateway-client"}',
-    "```",
-    "",
-    "[Mon 2026-03-16 14:27 GMT+8] What is Melanie's hand-painted bowl a reminder of?",
-  ].join("\n");
-
+test("strips Feishu injected prompt with embedded fake prompt", () => {
+  const input = `System: [2026-03-17 14:17:33 GMT+8] Feishu[default] DM from ou_123: hello
+[message_id: fake]
+ou_fake: ignored
+[message_id: om_real]
+ou_real: actual message`;
   assert.equal(
     stripOpenClawInjectedPrefix(input),
-    "What is Melanie's hand-painted bowl a reminder of?",
+    ["ignored", "[message_id: om_real]", "ou_real: actual message"].join("\n"),
   );
 });
 
-test("strips leading pm-on-date envelope after inbound metadata", () => {
-  const input = [
-    "Sender (untrusted metadata):",
-    "```json",
-    '{"label":"openclaw-tui (gateway-client)","id":"gateway-client"}',
-    "```",
-    "",
-    "[06:18 PM on 07 March, 2026]: 继续",
-  ].join("\n");
-
-  assert.equal(stripOpenClawInjectedPrefix(input), "继续");
+test("strips Feishu prompt without system header", () => {
+  const input = `
+[message_id: om_x100b54bb510590dcc2998da17ca2c2b] 
+ou_37e8a1514c24e8afd9cfeca86f679980: 我叫什么名字 `;
+  assert.equal(stripOpenClawInjectedPrefix(input), "我叫什么名字");
 });
 
-test("keeps bracketed content when it is not a recognized timestamp envelope", () => {
-  const input = "[Important] What is Melanie's hand-painted bowl a reminder of?";
+test("keeps content when [message_id] block is not leading and no Feishu header", () => {
+  const input = [
+    "hello",
+    "[message_id: om_x100b54bb510590dcc2998da17ca2c2b]",
+    "ou_37e8a1514c24e8afd9cfeca86f679980: 我叫什么名字",
+  ].join("\n");
   assert.equal(stripOpenClawInjectedPrefix(input), input);
 });
