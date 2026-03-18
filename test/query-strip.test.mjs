@@ -195,6 +195,19 @@ ou_37e8a1514c24e8afd9cfeca86f679980: 我叫什么名字 `;
   assert.equal(stripOpenClawInjectedPrefix(input), "我叫什么名字");
 });
 
+test("strips direct leading Feishu sender prefix", () => {
+  const input = "ou_37e8a1514c24e8afd9cfeca86f679980: woshishuia";
+  assert.equal(stripOpenClawInjectedPrefix(input), "woshishuia");
+});
+
+test("strips leading Feishu sender prefix after message_id hints", () => {
+  const input = [
+    "[message_id:om_x100b54bb510590dcc2998da17ca2c2b]",
+    "ou_37e8a1514c24e8afd9cfeca86f679980: 我叫什么名字",
+  ].join("\n");
+  assert.equal(stripOpenClawInjectedPrefix(input), "我叫什么名字");
+});
+
 test("strips message id hints and standard OpenClaw channel envelope", () => {
   const input = [
     "[message_id: 123456]",
