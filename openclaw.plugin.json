@@ -41,6 +41,11 @@
         ],
         "default": "none"
       },
+      "useDirectSessionUserId": {
+        "type": "boolean",
+        "description": "When enabled, direct-session keys like agent:main:<provider>:direct:<id> use the direct id as MemOS user_id instead of the default configured userId.",
+        "default": false
+      },
       "resetOnNew": {
         "type": "boolean",
         "default": true
